@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics.Tracing;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Serialization;
@@ -14,47 +17,23 @@ namespace EmployeeManagement
 {
     public partial class Main : Form
     {
-        private string _fileEmployeesPath = Path.Combine(Environment.CurrentDirectory, "employees.txt");
+        private FileHelper<List<Employee>> _fileHelper = new FileHelper<List<Employee>>(Program.FilePath);
 
         public Main()
         {
             InitializeComponent();
 
-            var employees = DeserializeFromFile();
-
+            var employees = _fileHelper.DeserializeFromFile();
             dgvData.DataSource = employees;
-        }
-
-        public void SerializeToFile(List<Employee> employees)
-        {
-            var serializer = new XmlSerializer(typeof(List<Employee>));
-
-
-            using (var streamWriter = new StreamWriter(_fileEmployeesPath))
-            {
-                serializer.Serialize(streamWriter, employees);
-                streamWriter.Close();
-            }   
-        }
-
-        public List<Employee> DeserializeFromFile()
-        {
-            if (!File.Exists(_fileEmployeesPath))
-                return new List<Employee>();
-
-            var serializer = new XmlSerializer(typeof(List<Employee>));
-
-            using (var streamReader = new StreamReader(_fileEmployeesPath))
-            {
-                var employees = (List<Employee>)serializer.Deserialize(streamReader);
-                streamReader.Close();
-                return employees;
-            }
+            RefreshData();
+            SetColumnsHeader();
+            InitComboboxGroups();
         }
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
             var addEditEmployee = new AddEditEmployee();
+            addEditEmployee.FormClosing += AddEditEmployee_FormClosing;
             addEditEmployee.ShowDialog();
         }
 
@@ -66,23 +45,168 @@ namespace EmployeeManagement
                 return;
             }
 
+            if (dgvData.SelectedRows[0].Cells[6].Value != null)
+            {
+                MessageBox.Show("Employee has been dismissed");
+                return;
+            }
             var addEditEmployee = new AddEditEmployee(
                 Convert.ToInt32(dgvData.SelectedRows[0].Cells[0].Value));
+
+            addEditEmployee.FormClosing += AddEditEmployee_FormClosing;
             addEditEmployee.ShowDialog();
-
-
         }
 
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (dgvData.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Employee is not selected");
+                return;
+            }
 
+            if (dgvData.SelectedRows[0].Cells[6].Value != null)
+            {
+                MessageBox.Show("Employee has been dismised");
+                return;
+            }
+            var selectedEmployee = dgvData.SelectedRows[0];
+            var confirmDelete =
+                MessageBox.Show($"Are you sure, to delete {selectedEmployee.Cells[1].Value.ToString().Trim()}?", "Delete employee", MessageBoxButtons.OKCancel);
+
+            if (confirmDelete == DialogResult.OK)
+            {
+                var dismissEmployee = new DismissEmployee(Convert.ToInt32(dgvData.SelectedRows[0].Cells[0].Value));
+                dismissEmployee.FormClosing += DismissEmployee_FormClosing;
+                dismissEmployee.ShowDialog();
+            }
+        }     
+
+        private void SetColumnsHeader()
+        {
+            dgvData.Columns[0].HeaderText = "ID";
+            dgvData.Columns[1].HeaderText = "First name";
+            dgvData.Columns[2].HeaderText = "Last name";
+            dgvData.Columns[3].HeaderText = "Employment";
+            dgvData.Columns[4].HeaderText = "Salary";
+            dgvData.Columns[5].HeaderText = "Comments";
+            dgvData.Columns[6].HeaderText = "Dismissal";
         }
 
-        private void btnRefresh_Click(object sender, EventArgs e)
+        private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var employees = DeserializeFromFile();
+            RefreshData();
+        }
 
+        private void cbEmployeeList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            dgvData.CurrentCell = null;
+
+            if (cbEmployeeList.SelectedIndex == 0)
+            {
+                RefreshData();
+            }
+
+            if (cbEmployeeList.SelectedIndex == 1)
+            {
+                for (int i = 0; i < dgvData.Rows.Count; i++)
+                { 
+                    if (Convert.ToInt32(dgvData.Rows[i].Cells[4].Value) < 5000 && dgvData.Rows[i].Cells[6].Value == null)
+                        dgvData.Rows[i].Visible = true;
+                    else
+                        dgvData.Rows[i].Visible = false;
+                }
+            }
+
+            if (cbEmployeeList.SelectedIndex == 2)
+            {
+                for (int i = 0; i < dgvData.Rows.Count; i++)
+                {
+                    if (Convert.ToInt32(dgvData.Rows[i].Cells[4].Value) >= 5000 && dgvData.Rows[i].Cells[6].Value == null)
+                        dgvData.Rows[i].Visible = true;
+                    else
+                        dgvData.Rows[i].Visible = false;
+                }
+            }
+
+            if (cbEmployeeList.SelectedIndex == 3)
+            {
+                for (int i = 0; i < dgvData.Rows.Count; i++)
+                {
+                    if (dgvData.Rows[i].Cells[6].Value != null)
+                        dgvData.Rows[i].Visible = false;
+                    else
+                        dgvData.Rows[i].Visible = true;
+                }
+            }
+
+            if (cbEmployeeList.SelectedIndex == 4)
+            {
+                for (int i = 0; i < dgvData.Rows.Count; i++)
+                {
+                    if (dgvData.Rows[i].Cells[6].Value != null)
+                        dgvData.Rows[i].Visible = true;
+                    else
+                        dgvData.Rows[i].Visible = false;
+                }
+            }
+        }
+
+        private void InitComboboxGroups()
+        {
+            var _groups = new List<Group>
+            {
+                new Group { Id = 0, Name = "All employees" },
+                new Group { Id = 1, Name = "Earnings below 5000" },
+                new Group { Id = 2, Name = "Earnings over 5000" },
+                new Group { Id = 3, Name = "Hired employees" },
+                new Group { Id = 4, Name = "Redundant workers" },
+            };
+            cbEmployeeList.DataSource = _groups;
+            cbEmployeeList.ValueMember = "Id";
+            cbEmployeeList.DisplayMember = "Name";
+        }
+
+        private void RefreshData()
+        {
+            var employees = _fileHelper.DeserializeFromFile();
+            employees = employees.OrderBy(x => x.Id).ToList();
             dgvData.DataSource = employees;
+        }
+
+        private void restoreEmployeeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (dgvData.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Employee is not selected");
+                return;
+            }
+
+            if (dgvData.SelectedRows[0].Cells[6].Value == null)
+            {
+                MessageBox.Show("Employee has not been dismissed");
+                return;
+            }
+
+            var selectedEmployee = dgvData.SelectedRows[0];
+            var confirmDelete =
+                MessageBox.Show($"Are you sure, to restore that person?", "Restore employee", MessageBoxButtons.OKCancel);
+
+            if (confirmDelete == DialogResult.OK)
+            {
+                selectedEmployee.Cells[6].Value = null;
+                MessageBox.Show("Welcome in our company!");
+            }
+        }
+
+        private void AddEditEmployee_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            RefreshData();
+        }
+
+        private void DismissEmployee_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            RefreshData();
         }
     }
 }

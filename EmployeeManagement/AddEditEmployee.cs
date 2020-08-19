@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,72 +15,71 @@ namespace EmployeeManagement
 {
     public partial class AddEditEmployee : Form
     {
+        private int _employeeId;
 
-        private string _fileEmployeesPath = Path.Combine(Environment.CurrentDirectory, "employees.txt");
+        private FileHelper<List<Employee>> _fileHelper = new FileHelper<List<Employee>>(Program.FilePath);
 
         public AddEditEmployee(int id = 0)
         {
             InitializeComponent();
-
-        }
-
-        public void SerializeToFile(List<Employee> employees)
-        {
-            var serializer = new XmlSerializer(typeof(List<Employee>));
-
-
-            using (var streamWriter = new StreamWriter(_fileEmployeesPath))
-            {
-                serializer.Serialize(streamWriter, employees);
-                streamWriter.Close();
-            }
-        }
-
-        public List<Employee> DeserializeFromFile()
-        {
-            if (!File.Exists(_fileEmployeesPath))
-                return new List<Employee>();
-
-            var serializer = new XmlSerializer(typeof(List<Employee>));
-
-            using (var streamReader = new StreamReader(_fileEmployeesPath))
-            {
-                var employees = (List<Employee>)serializer.Deserialize(streamReader);
-                streamReader.Close();
-                return employees;
-            }
+            _employeeId = id;
+            GetEmployeeData();
+            tbName.Select();
         }
 
         private void btnConfirm_Click(object sender, EventArgs e)
         {
-            var employees = DeserializeFromFile();
+            var employees = _fileHelper.DeserializeFromFile();
 
-            var employeeWithHighestId = employees.OrderByDescending(x => x.Id).FirstOrDefault();
-            int salary = 0;
-            var employeeId = employeeWithHighestId == null ? 1 : employeeWithHighestId.Id + 1;
-                
-            salary = Convert.ToInt32(tbSalary.Text);
+            if (_employeeId != 0)
+            {
+                employees.RemoveAll(x => x.Id == _employeeId);
+            }
+            else
+            {
+                var employeeWithHighestId = employees.OrderByDescending(x => x.Id).FirstOrDefault();
+                _employeeId = employeeWithHighestId == null ? 1 : employeeWithHighestId.Id + 1;
+            }
 
             var employee = new Employee
             {
-                Id = employeeId,
+                Id = _employeeId,
                 FirstName = tbName.Text,
                 LastName = tbLastName.Text,
-                DateOfEmployment = dtpEmployment.Value.ToString(),
-                Salary = salary,
+                DateOfEmployment = dtpEmployment.Value.ToShortDateString(),
+                Salary = Convert.ToInt32(tbSalary.Text),
                 Comments = rtbComments.Text,
             };
 
             employees.Add(employee);
-
-            SerializeToFile(employees);
-
+            _fileHelper.SerializeToFile(employees);
             Close();
+            
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             Close();
+        }
+
+        private void GetEmployeeData()
+        {
+            if (_employeeId != 0)
+            {
+                var employees = _fileHelper.DeserializeFromFile();
+                var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
+                DateTime dt = DateTime.Parse(employee.DateOfEmployment);
+
+                if (employee == null)
+                    throw new Exception("There is no employee with this id");
+
+                tbId.Text = employee.Id.ToString();
+                tbName.Text = employee.FirstName;
+                tbLastName.Text = employee.LastName;
+                dtpEmployment.Value = dt;
+                tbSalary.Text = employee.Salary.ToString();
+                rtbComments.Text = employee.Comments;
+            }
         }
     }
 }
