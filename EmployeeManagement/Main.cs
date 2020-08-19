@@ -194,7 +194,9 @@ namespace EmployeeManagement
 
             if (confirmDelete == DialogResult.OK)
             {
+                selectedEmployee.Cells[3].Value = DateTime.Now.ToShortDateString();
                 selectedEmployee.Cells[6].Value = null;
+                
                 MessageBox.Show("Welcome in our company!");
             }
         }
