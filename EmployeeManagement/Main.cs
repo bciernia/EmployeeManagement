@@ -45,7 +45,7 @@ namespace EmployeeManagement
                 return;
             }
 
-            if (dgvData.SelectedRows[0].Cells[6].Value != null)
+            if (dgvData.SelectedRows[0].Cells[6].Value == null)
             {
                 MessageBox.Show("Employee has been dismissed");
                 return;
@@ -65,14 +65,15 @@ namespace EmployeeManagement
                 return;
             }
 
-            if (dgvData.SelectedRows[0].Cells[6].Value != null)
+            if (dgvData.SelectedRows[0].Cells[6].Value == null)
             {
                 MessageBox.Show("Employee has been dismised");
                 return;
             }
             var selectedEmployee = dgvData.SelectedRows[0];
             var confirmDelete =
-                MessageBox.Show($"Are you sure, to delete {selectedEmployee.Cells[1].Value.ToString().Trim()}?", "Delete employee", MessageBoxButtons.OKCancel);
+                MessageBox.Show($"Are you sure, to delete {selectedEmployee.Cells[1].Value.ToString().Trim()}?",
+                "Delete employee", MessageBoxButtons.OKCancel);
 
             if (confirmDelete == DialogResult.OK)
             {
@@ -106,45 +107,41 @@ namespace EmployeeManagement
             {
                 RefreshData();
             }
-
-            if (cbEmployeeList.SelectedIndex == 1)
+            else if (cbEmployeeList.SelectedIndex == 1)
             {
                 for (int i = 0; i < dgvData.Rows.Count; i++)
-                { 
-                    if (Convert.ToInt32(dgvData.Rows[i].Cells[4].Value) < 5000 && dgvData.Rows[i].Cells[6].Value == null)
+                {
+                    if (Convert.ToDecimal(dgvData.Rows[i].Cells[4].Value) < 5000 && dgvData.Rows[i].Cells[6].Value.ToString() == "01.01.0001 00:00:00")
+                        dgvData.Rows[i].Visible = true;
+                    else
+                        dgvData.Rows[i].Visible = false;
+                }
+            } //&& dgvData.Rows[i].Cells[6].Value == null
+            else if (cbEmployeeList.SelectedIndex == 2)
+            {
+                for (int i = 0; i < dgvData.Rows.Count; i++)
+                {
+                    if (Convert.ToDecimal(dgvData.Rows[i].Cells[4].Value) >= 5000 && dgvData.Rows[i].Cells[6].Value.ToString() == "01.01.0001 00:00:00")
                         dgvData.Rows[i].Visible = true;
                     else
                         dgvData.Rows[i].Visible = false;
                 }
             }
-
-            if (cbEmployeeList.SelectedIndex == 2)
+            else if (cbEmployeeList.SelectedIndex == 3)
             {
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (Convert.ToInt32(dgvData.Rows[i].Cells[4].Value) >= 5000 && dgvData.Rows[i].Cells[6].Value == null)
-                        dgvData.Rows[i].Visible = true;
-                    else
-                        dgvData.Rows[i].Visible = false;
-                }
-            }
-
-            if (cbEmployeeList.SelectedIndex == 3)
-            {
-                for (int i = 0; i < dgvData.Rows.Count; i++)
-                {
-                    if (dgvData.Rows[i].Cells[6].Value != null)
+                    if (dgvData.Rows[i].Cells[6].Value.ToString() != "01.01.0001 00:00:00")
                         dgvData.Rows[i].Visible = false;
                     else
                         dgvData.Rows[i].Visible = true;
                 }
             }
-
-            if (cbEmployeeList.SelectedIndex == 4)
+            else
             {
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (dgvData.Rows[i].Cells[6].Value != null)
+                    if (dgvData.Rows[i].Cells[6].Value.ToString() != "01.01.0001 00:00:00")
                         dgvData.Rows[i].Visible = true;
                     else
                         dgvData.Rows[i].Visible = false;
@@ -176,6 +173,7 @@ namespace EmployeeManagement
 
         private void restoreEmployeeToolStripMenuItem_Click(object sender, EventArgs e)
         {
+
             if (dgvData.SelectedRows.Count == 0)
             {
                 MessageBox.Show("Employee is not selected");
@@ -194,10 +192,22 @@ namespace EmployeeManagement
 
             if (confirmDelete == DialogResult.OK)
             {
-                selectedEmployee.Cells[3].Value = DateTime.Now.ToShortDateString();
+                //Przywracanie pracowników TODO
+
+                int _employeeId = (int)selectedEmployee.Cells[0].Value;
+
+                selectedEmployee.Cells[3].Value = DateTime.Now.Date;
                 selectedEmployee.Cells[6].Value = null;
-                
+
+                var employees = _fileHelper.DeserializeFromFile();
+                var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
+                employee.DateOfEmployment = DateTime.Now.Date;
+                employee.DateOfDismiss = DateTime.Now.AddDays(2);
+
+                _fileHelper.SerializeToFile(employees);
+
                 MessageBox.Show("Welcome in our company!");
+
             }
         }
 
@@ -207,6 +217,10 @@ namespace EmployeeManagement
         }
 
         private void DismissEmployee_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            RefreshData();
+        }
+        private void RestoreEmployee_FormClosing(object sender, FormClosingEventArgs e)
         {
             RefreshData();
         }

@@ -46,15 +46,13 @@ namespace EmployeeManagement
                 Id = _employeeId,
                 FirstName = tbName.Text,
                 LastName = tbLastName.Text,
-                DateOfEmployment = dtpEmployment.Value.ToShortDateString(),
-                Salary = Convert.ToInt32(tbSalary.Text),
+                DateOfEmployment = dtpEmployment.Value.Date,
+                Salary = Decimal.Parse(tbSalary.Text),
                 Comments = rtbComments.Text,
             };
-
             employees.Add(employee);
             _fileHelper.SerializeToFile(employees);
             Close();
-            
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -68,7 +66,7 @@ namespace EmployeeManagement
             {
                 var employees = _fileHelper.DeserializeFromFile();
                 var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
-                DateTime dt = DateTime.Parse(employee.DateOfEmployment);
+                //DateTime dt = DateTime.Parse(employee.DateOfEmployment);
 
                 if (employee == null)
                     throw new Exception("There is no employee with this id");
@@ -76,10 +74,13 @@ namespace EmployeeManagement
                 tbId.Text = employee.Id.ToString();
                 tbName.Text = employee.FirstName;
                 tbLastName.Text = employee.LastName;
-                dtpEmployment.Value = dt;
+                dtpEmployment.Value = employee.DateOfEmployment.Date;
                 tbSalary.Text = employee.Salary.ToString();
                 rtbComments.Text = employee.Comments;
             }
+
+            Console.WriteLine("");
+
         }
     }
 }

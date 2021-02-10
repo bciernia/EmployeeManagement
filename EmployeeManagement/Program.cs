@@ -12,7 +12,6 @@ namespace EmployeeManagement
     {
         public static string FilePath = Path.Combine(Environment.CurrentDirectory, "employees.txt");
 
-
         /// <summary>
         /// The main entry point for the application.
         /// </summary>

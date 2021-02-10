@@ -14,8 +14,8 @@ namespace EmployeeManagement
 {
     public partial class DismissEmployee : Form
     {
-        private FileHelper<List<Employee>> _fileHelper = new FileHelper<List<Employee>>(Program.FilePath);
         private int _employeeId;
+        private FileHelper<List<Employee>> _fileHelper = new FileHelper<List<Employee>>(Program.FilePath);
 
         public DismissEmployee(int id = 0)
         {
@@ -27,9 +27,9 @@ namespace EmployeeManagement
         {
             var employees = _fileHelper.DeserializeFromFile();
             var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
-            dtpDismiss.MinDate = DateTime.Parse(employee.DateOfEmployment);
-            employee.DateOfDismiss = dtpDismiss.Value.ToShortDateString();
-            
+            dtpDismiss.MinDate = employee.DateOfEmployment;
+            employee.DateOfDismiss = dtpDismiss.Value.Date;
+
             _fileHelper.SerializeToFile(employees);
             Close();
         }
