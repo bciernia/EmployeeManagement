@@ -102,6 +102,7 @@ namespace EmployeeManagement
         private void cbEmployeeList_SelectedIndexChanged(object sender, EventArgs e)
         {
             dgvData.CurrentCell = null;
+            CurrencyManager currencyManager;
 
             if (cbEmployeeList.SelectedIndex == 0)
             {
@@ -109,19 +110,35 @@ namespace EmployeeManagement
             }
             else if (cbEmployeeList.SelectedIndex == 1)
             {
+                RefreshData();
+
+                currencyManager = (CurrencyManager)BindingContext[dgvData.DataSource];
+                currencyManager.SuspendBinding();
+                currencyManager.ResumeBinding();
+                
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (Convert.ToDecimal(dgvData.Rows[i].Cells[4].Value) < 5000 && dgvData.Rows[i].Cells[6].Value.ToString() == "01.01.0001 00:00:00")
+                    if (Convert.ToInt32(dgvData.Rows[i].Cells[4].Value) < 5000
+                        && dgvData.Rows[i].Cells[6].Value.Equals(false))
                         dgvData.Rows[i].Visible = true;
                     else
                         dgvData.Rows[i].Visible = false;
                 }
-            } //&& dgvData.Rows[i].Cells[6].Value == null
+            }//&& dgvData.Rows[i].Cells[6].Value.ToString() == "False"
             else if (cbEmployeeList.SelectedIndex == 2)
             {
+                RefreshData();
+
+                currencyManager = (CurrencyManager)BindingContext[dgvData.DataSource];
+                currencyManager.SuspendBinding();
+                currencyManager.ResumeBinding();
+
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (Convert.ToDecimal(dgvData.Rows[i].Cells[4].Value) >= 5000 && dgvData.Rows[i].Cells[6].Value.ToString() == "01.01.0001 00:00:00")
+
+
+                    if (Convert.ToDecimal(dgvData.Rows[i].Cells[4].Value) >= 5000 
+                        && dgvData.Rows[i].Cells[6].Value.Equals(false))
                         dgvData.Rows[i].Visible = true;
                     else
                         dgvData.Rows[i].Visible = false;
@@ -129,9 +146,15 @@ namespace EmployeeManagement
             }
             else if (cbEmployeeList.SelectedIndex == 3)
             {
+                RefreshData();
+
+                currencyManager = (CurrencyManager)BindingContext[dgvData.DataSource];
+                currencyManager.SuspendBinding();
+                currencyManager.ResumeBinding();
+
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (dgvData.Rows[i].Cells[6].Value.ToString() != "01.01.0001 00:00:00")
+                    if (dgvData.Rows[i].Cells[6].Value.Equals(true))
                         dgvData.Rows[i].Visible = false;
                     else
                         dgvData.Rows[i].Visible = true;
@@ -139,9 +162,15 @@ namespace EmployeeManagement
             }
             else
             {
+                RefreshData();
+
+                currencyManager = (CurrencyManager)BindingContext[dgvData.DataSource];
+                currencyManager.SuspendBinding();
+                currencyManager.ResumeBinding();
+
                 for (int i = 0; i < dgvData.Rows.Count; i++)
                 {
-                    if (dgvData.Rows[i].Cells[6].Value.ToString() != "01.01.0001 00:00:00")
+                    if (dgvData.Rows[i].Cells[6].Value.Equals(true))
                         dgvData.Rows[i].Visible = true;
                     else
                         dgvData.Rows[i].Visible = false;
@@ -180,33 +209,31 @@ namespace EmployeeManagement
                 return;
             }
 
-            if (dgvData.SelectedRows[0].Cells[6].Value == null)
+            if (dgvData.SelectedRows[0].Cells[6].Value.Equals(false))
             {
                 MessageBox.Show("Employee has not been dismissed");
                 return;
             }
 
             var selectedEmployee = dgvData.SelectedRows[0];
-            var confirmDelete =
+            var confirmRestore =
                 MessageBox.Show($"Are you sure, to restore that person?", "Restore employee", MessageBoxButtons.OKCancel);
 
-            if (confirmDelete == DialogResult.OK)
+            if (confirmRestore == DialogResult.OK)
             {
-                //Przywracanie pracowników TODO
-
                 int _employeeId = (int)selectedEmployee.Cells[0].Value;
 
                 selectedEmployee.Cells[3].Value = DateTime.Now.Date;
-                selectedEmployee.Cells[6].Value = null;
 
                 var employees = _fileHelper.DeserializeFromFile();
                 var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
                 employee.DateOfEmployment = DateTime.Now.Date;
-                employee.DateOfDismiss = DateTime.Now.AddDays(2);
+                employee.IsDismissed = false;
 
                 _fileHelper.SerializeToFile(employees);
 
                 MessageBox.Show("Welcome in our company!");
+                RefreshData();
 
             }
         }

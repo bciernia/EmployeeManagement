@@ -45,36 +45,5 @@ namespace EmployeeManagement
                 return employees;
             }
         }
-  /*    SERIALIZACJA I DESERIALIZACJA W FORMACIE JSON -----------------------------TODO
-        public void SerializeToFile(T employees)
-        {
-            JsonSerializer jsonSerializer = new JsonSerializer();
-            if (File.Exists(_filePath))
-                File.Delete(_filePath);
-
-            StreamWriter sw = new StreamWriter(_filePath);
-            JsonWriter jsonWriter = new JsonTextWriter(sw);
-
-            jsonSerializer.Serialize(jsonWriter, employees);
-
-            jsonWriter.Close();
-            sw.Close();
-        }
-
-        public List<T> DeserializeFromFile()
-        {
-            JObject obj = null;
-            JsonSerializer jsonSerializer = new JsonSerializer();
-
-            if (File.Exists(_filePath))
-            {
-                StreamReader sr = new StreamReader(_filePath);
-                JsonReader jsonReader = new JsonTextReader(sr);
-                obj = jsonSerializer.Deserialize(jsonReader) as JObject;
-                jsonReader.Close();
-                sr.Close();
-            }
-        }
-    */
     }
 }

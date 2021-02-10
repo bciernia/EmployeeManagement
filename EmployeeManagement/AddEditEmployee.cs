@@ -47,7 +47,7 @@ namespace EmployeeManagement
                 FirstName = tbName.Text,
                 LastName = tbLastName.Text,
                 DateOfEmployment = dtpEmployment.Value.Date,
-                Salary = Decimal.Parse(tbSalary.Text),
+                Salary = Int32.Parse(tbSalary.Text),
                 Comments = rtbComments.Text,
             };
             employees.Add(employee);

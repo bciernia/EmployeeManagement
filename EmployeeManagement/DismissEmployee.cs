@@ -28,7 +28,7 @@ namespace EmployeeManagement
             var employees = _fileHelper.DeserializeFromFile();
             var employee = employees.FirstOrDefault(x => x.Id == _employeeId);
             dtpDismiss.MinDate = employee.DateOfEmployment;
-            employee.DateOfDismiss = dtpDismiss.Value.Date;
+            employee.IsDismissed = true;
 
             _fileHelper.SerializeToFile(employees);
             Close();

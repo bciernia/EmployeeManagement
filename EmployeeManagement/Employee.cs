@@ -12,9 +12,8 @@ namespace EmployeeManagement
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime DateOfEmployment { get; set; }
-        public decimal Salary { get; set; }
+        public int Salary { get; set; }
         public string Comments { get; set; }
-        public DateTime DateOfDismiss { get; set; }
         public bool IsDismissed { get; set; }
     }
 }
